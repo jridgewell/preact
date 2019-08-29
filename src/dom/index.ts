@@ -26,6 +26,8 @@ import options from '../options';
  * @typedef {Element & ElementCSSInlineStyle & PreactElementExtensions} PreactElement
  */
 
+type PreactElement = import('../internal').PreactElement;
+
 /**
  * Create an element with the given nodeName.
  * @param {string} nodeName The DOM node to create
@@ -33,9 +35,9 @@ import options from '../options';
  *  namespace.
  * @returns {PreactElement} The created DOM node
  */
-export function createNode(nodeName, isSvg) {
+export function createNode(nodeName: string, isSvg: boolean): PreactElement {
 	/** @type {PreactElement} */
-	let node = isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName);
+	let node = (isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName)) as unknown as PreactElement;
 	node.normalizedNodeName = nodeName;
 	return node;
 }
@@ -45,7 +47,7 @@ export function createNode(nodeName, isSvg) {
  * Remove a child node from its parent if attached.
  * @param {Node} node The node to remove
  */
-export function removeNode(node) {
+export function removeNode(node: Node) {
 	let parentNode = node.parentNode;
 	if (parentNode) parentNode.removeChild(node);
 }
@@ -63,7 +65,7 @@ export function removeNode(node) {
  * @param {boolean} isSvg Are we currently diffing inside an svg?
  * @private
  */
-export function setAccessor(node, name, old, value, isSvg) {
+export function setAccessor(node: PreactElement, name: string, old: any, value: any, isSvg: boolean) {
 	if (name==='className') name = 'class';
 
 
@@ -83,10 +85,10 @@ export function setAccessor(node, name, old, value, isSvg) {
 		}
 		if (value && typeof value==='object') {
 			if (typeof old!=='string') {
-				for (let i in old) if (!(i in value)) node.style[i] = '';
+				for (let i in old) if (!(i in value)) (node.style as any)[i] = '';
 			}
 			for (let i in value) {
-				node.style[i] = typeof value[i]==='number' && IS_NON_DIMENSIONAL.test(i)===false ? (value[i]+'px') : value[i];
+				(node.style as any)[i] = typeof value[i]==='number' && IS_NON_DIMENSIONAL.test(i)===false ? (value[i]+'px') : value[i];
 			}
 		}
 	}
@@ -108,7 +110,7 @@ export function setAccessor(node, name, old, value, isSvg) {
 		// Attempt to set a DOM property to the given value.
 		// IE & FF throw for certain property-value combinations.
 		try {
-			node[name] = value==null ? '' : value;
+			(node as any)[name] = value==null ? '' : value;
 		} catch (e) { }
 		if ((value==null || value===false) && name!='spellcheck') node.removeAttribute(name);
 	}
@@ -134,6 +136,6 @@ export function setAccessor(node, name, old, value, isSvg) {
  * @param {Event} e The event object from the browser
  * @private
  */
-function eventProxy(e) {
+function eventProxy(this: PreactElement, e: Event) {
 	return this._listeners[e.type](options.event && options.event(e) || e);
 }

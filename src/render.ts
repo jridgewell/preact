@@ -1,5 +1,8 @@
 import { diff } from './vdom/diff';
 
+type VNode = import('./internal').VNode;
+type PreactElement = import('./internal').PreactElement;
+
 /**
  * Render JSX into a `parent` Element.
  * @param {import('./vnode').VNode} vnode A (JSX) VNode to render
@@ -17,6 +20,6 @@ import { diff } from './vdom/diff';
  * const Thing = ({ name }) => <span>{ name }</span>;
  * render(<Thing name="one" />, document.querySelector('#foo'));
  */
-export function render(vnode, parent, merge) {
+export function render(vnode: VNode, parent: PreactElement, merge?: PreactElement) {
 	return diff(merge, vnode, {}, false, parent, false);
 }

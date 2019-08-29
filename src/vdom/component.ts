@@ -7,6 +7,10 @@ import { diff, mounts, diffLevel, flushMounts, recollectNodeTree, removeChildren
 import { createComponent, recyclerComponents } from './component-recycler';
 import { removeNode } from '../dom/index';
 
+type PreactElement = import('../internal').PreactElement;
+type Component = import('../internal').Component;
+type VNode = import('../internal').VNode;
+
 /**
  * Set a component's `props` and possibly re-render the component
  * @param {import('../component').Component} component The Component to set props on
@@ -15,7 +19,7 @@ import { removeNode } from '../dom/index';
  * @param {object} context The new context
  * @param {boolean} mountAll Whether or not to immediately mount all components
  */
-export function setComponentProps(component, props, renderMode, context, mountAll) {
+export function setComponentProps(component: Component, props: object, renderMode: number, context: object, mountAll: boolean) {
 	if (component._disable) return;
 	component._disable = true;
 
@@ -219,11 +223,11 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
  * @returns {import('../dom').PreactElement} The created/mutated element
  * @private
  */
-export function buildComponentFromVNode(dom, vnode, context, mountAll) {
-	let c = dom && dom._component,
+export function buildComponentFromVNode(dom: PreactElement | Text | null | undefined, vnode: VNode, context: object, mountAll: boolean) {
+	let c = dom && (dom as PreactElement)._component,
 		originalComponent = c,
 		oldDom = dom,
-		isDirectOwner = c && dom._componentConstructor===vnode.nodeName,
+		isDirectOwner = c && (dom as PreactElement)._componentConstructor===vnode.nodeName,
 		isOwner = isDirectOwner,
 		props = getNodeProps(vnode);
 	while (c && !isOwner && (c=c._parentComponent)) {
@@ -240,9 +244,12 @@ export function buildComponentFromVNode(dom, vnode, context, mountAll) {
 			dom = oldDom = null;
 		}
 
-		c = createComponent(vnode.nodeName, props, context);
+		// Callsite guarantee
+		if (typeof vnode.nodeName as unknown !== 'funtion') throw new Error('buildComponentFromVNode');
+
+		c = createComponent(vnode.nodeName as any, props, context);
 		if (dom && !c.nextBase) {
-			c.nextBase = dom;
+			c.nextBase = dom as PreactElement;
 			// passing dom/oldDom as nextBase will recycle it if unused, so bypass recycling on L229:
 			oldDom = null;
 		}
@@ -250,12 +257,12 @@ export function buildComponentFromVNode(dom, vnode, context, mountAll) {
 		dom = c.base;
 
 		if (oldDom && dom!==oldDom) {
-			oldDom._component = null;
+			(oldDom as PreactElement)._component = null;
 			recollectNodeTree(oldDom, false);
 		}
 	}
 
-	return dom;
+	return dom!;
 }
 
 
@@ -265,7 +272,7 @@ export function buildComponentFromVNode(dom, vnode, context, mountAll) {
  * @param {import('../component').Component} component The Component instance to unmount
  * @private
  */
-export function unmountComponent(component) {
+export function unmountComponent(component: Component) {
 	if (options.beforeUnmount) options.beforeUnmount(component);
 
 	let base = component.base;
@@ -282,7 +289,7 @@ export function unmountComponent(component) {
 		unmountComponent(inner);
 	}
 	else if (base) {
-		if (base[ATTR_KEY]!=null) applyRef(base[ATTR_KEY].ref, null);
+		if ((base as any)[ATTR_KEY]!=null) applyRef((base as any)[ATTR_KEY].ref, null);
 
 		component.nextBase = base;
 

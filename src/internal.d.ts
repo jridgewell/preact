@@ -9,6 +9,15 @@ declare namespace preact {
 	type ComponentChild = VNode<any> | object | string | number | boolean | null;
 	type ComponentChildren = ComponentChild[] | ComponentChild;
 
+	type PreactElement = HTMLElement & {
+		normalizedNodeName: string;
+		_listeners: {
+			[key: string]: EventListener;
+		};
+		_component: Component<any> | null
+		_componentConstructor: ComponentFactory<any>;
+	}
+
 	/**
 	 * @deprecated
 	 *
@@ -93,7 +102,7 @@ declare namespace preact {
 		state: Readonly<S>;
 		props: RenderableProps<P>;
 		context: any;
-		base?: HTMLElement;
+		base?: PreactElement | null;
 
 		// From https://github.com/DefinitelyTyped/DefinitelyTyped/blob/e836acc75a78cf0655b5dfdbe81d69fdd4d8a252/types/react/index.d.ts#L402
 		// // We MUST keep setState() as a unified signature because it allows proper checking of the method return type.
@@ -109,12 +118,13 @@ declare namespace preact {
 		abstract render(props?: RenderableProps<P>, state?: Readonly<S>, context?: any): ComponentChild;
 
 		// Add these variables to avoid descendants shadowing them (some from properties.json for minification)
-		private __key;
-		private __ref;
-		private _component;
+		public __key: any;
+		public __ref: Ref<any>;
+		public _component: Component;
+		public _parentComponent: Component;
 		private _dirty;
-		private _disable;
-		private nextBase;
+		public _disable: boolean;
+		public nextBase: PreactElement;
 		private prevContext;
 		private prevProps;
 		private prevState;

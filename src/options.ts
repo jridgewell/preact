@@ -3,6 +3,19 @@
  * @typedef {import('./vnode').VNode} VNode
  */
 
+type VNode = import('./internal').VNode;
+type Component = import('./internal').Component;
+
+interface Options {
+    syncComponentUpdates?: boolean
+    vnode?: (vnode: VNode) => void
+    afterMount?: (component: Component) => void
+    afterUpdate?: (component: Component) => void
+    beforeUnmount?: (component: Component) => void
+    debounceRendering?: (rerender: () => void) => void
+    event?: (event: Event) => Event | void
+}
+
 /**
  * Global options
  * @public
@@ -17,6 +30,6 @@
  */
 
 /** @type {Options}  */
-const options = {};
+const options: Options = {};
 
 export default options;

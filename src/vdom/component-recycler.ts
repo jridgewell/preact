@@ -1,11 +1,14 @@
 import { Component } from '../component';
 
+type ComponentType = import('../internal').Component;
+type ComponentConstructor = import('../internal').ComponentConstructor;
+type FunctionalComponent<T> = import('../internal').FunctionalComponent<T>;
 /**
  * Retains a pool of Components for re-use.
  * @type {Component[]}
  * @private
  */
-export const recyclerComponents = [];
+export const recyclerComponents: ComponentType[] = [];
 
 
 /**
@@ -16,7 +19,7 @@ export const recyclerComponents = [];
  * @param {object} context The initial context of the component
  * @returns {import('../component').Component}
  */
-export function createComponent(Ctor, props, context) {
+export function createComponent(Ctor: ComponentConstructor, props: object, context: object) {
 	let inst, i = recyclerComponents.length;
 
 	if (Ctor.prototype && Ctor.prototype.render) {
@@ -24,7 +27,7 @@ export function createComponent(Ctor, props, context) {
 		Component.call(inst, props, context);
 	}
 	else {
-		inst = new Component(props, context);
+		inst = new (Component as unknown as ComponentConstructor)(props, context);
 		inst.constructor = Ctor;
 		inst.render = doRender;
 	}
@@ -43,6 +46,6 @@ export function createComponent(Ctor, props, context) {
 
 
 /** The `.render()` method for a PFC backing instance. */
-function doRender(props, state, context) {
+function doRender(this: ComponentType, props: object, state: any, context: object) {
 	return this.constructor(props, context);
 }

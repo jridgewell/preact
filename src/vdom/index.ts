@@ -1,5 +1,9 @@
 import { extend } from '../util';
+import { ComponentConstructor } from '../internal';
 
+type VNode = import('../internal').VNode;
+type PreactElement = import('../internal').PreactElement;
+type componentConstructor = import('../internal').ComponentConstructor;
 
 /**
  * Check if two nodes are equivalent.
@@ -9,14 +13,14 @@ import { extend } from '../util';
  *  when comparing.
  * @private
  */
-export function isSameNodeType(node, vnode, hydrating) {
+export function isSameNodeType(node: PreactElement | Text, vnode: VNode | string, hydrating: boolean) {
 	if (typeof vnode==='string' || typeof vnode==='number') {
-		return node.splitText!==undefined;
+		return node.nodeType===3;
 	}
 	if (typeof vnode.nodeName==='string') {
-		return !node._componentConstructor && isNamedNode(node, vnode.nodeName);
+		return !(node as PreactElement)._componentConstructor && isNamedNode(node, vnode.nodeName);
 	}
-	return hydrating || node._componentConstructor===vnode.nodeName;
+	return hydrating || (node as PreactElement)._componentConstructor===vnode.nodeName;
 }
 
 
@@ -25,8 +29,8 @@ export function isSameNodeType(node, vnode, hydrating) {
  * @param {import('../dom').PreactElement} node A DOM Element to inspect the name of.
  * @param {string} nodeName Unnormalized name to compare against.
  */
-export function isNamedNode(node, nodeName) {
-	return node.normalizedNodeName===nodeName || node.nodeName.toLowerCase()===nodeName.toLowerCase();
+export function isNamedNode(node: PreactElement | Text, nodeName: string) {
+	return (node as PreactElement).normalizedNodeName===nodeName || node.nodeName.toLowerCase()===nodeName.toLowerCase();
 }
 
 
@@ -37,15 +41,15 @@ export function isNamedNode(node, nodeName) {
  * @param {import('../vnode').VNode} vnode The VNode to get props for
  * @returns {object} The props to use for this VNode
  */
-export function getNodeProps(vnode) {
+export function getNodeProps(vnode: VNode): object {
 	let props = extend({}, vnode.attributes);
 	props.children = vnode.children;
 
-	let defaultProps = vnode.nodeName.defaultProps;
+	let defaultProps = (vnode.nodeName as ComponentConstructor).defaultProps;
 	if (defaultProps!==undefined) {
 		for (let i in defaultProps) {
 			if (props[i]===undefined) {
-				props[i] = defaultProps[i];
+				props[i] = (defaultProps as any)[i];
 			}
 		}
 	}
