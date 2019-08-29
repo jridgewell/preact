@@ -1,6 +1,8 @@
 import { extend } from './util';
 import { h } from './h';
 
+type VNode = import('./internal').VNode;
+
 /**
  * Clones the given VNode, optionally adding attributes/props and replacing its
  * children.
@@ -9,9 +11,9 @@ import { h } from './h';
  * @param {Array<import('./vnode').VNode>} [rest] Any additional arguments will be used as replacement
  *  children.
  */
-export function cloneElement(vnode, props) {
+export function cloneElement(vnode: VNode, props: object) {
 	return h(
-		vnode.nodeName,
+		vnode.nodeName as any,
 		extend(extend({}, vnode.attributes), props),
 		arguments.length>2 ? [].slice.call(arguments, 2) : vnode.children
 	);

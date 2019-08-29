@@ -2,7 +2,8 @@ import { Component } from '../component';
 
 type ComponentType = import('../internal').Component;
 type ComponentConstructor = import('../internal').ComponentConstructor;
-type FunctionalComponent<T> = import('../internal').FunctionalComponent<T>;
+type ComponentChild = import('../internal').ComponentChild;
+
 /**
  * Retains a pool of Components for re-use.
  * @type {Component[]}
@@ -24,7 +25,7 @@ export function createComponent(Ctor: ComponentConstructor, props: object, conte
 
 	if (Ctor.prototype && Ctor.prototype.render) {
 		inst = new Ctor(props, context);
-		Component.call(inst, props, context);
+		Component.call(inst as unknown as Component, props, context);
 	}
 	else {
 		inst = new (Component as unknown as ComponentConstructor)(props, context);
@@ -46,6 +47,6 @@ export function createComponent(Ctor: ComponentConstructor, props: object, conte
 
 
 /** The `.render()` method for a PFC backing instance. */
-function doRender(this: ComponentType, props: object, state: any, context: object) {
+function doRender(this: ComponentType, props: object, state: any, context: object): ComponentChild {
 	return this.constructor(props, context);
 }

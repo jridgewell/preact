@@ -2,9 +2,13 @@ import { VNode } from './vnode';
 import options from './options';
 
 
-const stack = [];
+type ComponentConstructor = import('./internal').ComponentConstructor;
+type VNode = import('./internal').VNode;
+type ComponentChildren = import('./internal').ComponentChildren;
 
-const EMPTY_CHILDREN = [];
+const stack: ComponentChildren[] = [];
+
+const EMPTY_CHILDREN: (VNode | string)[] = [];
 
 /**
  * JSX/hyperscript reviver.
@@ -37,18 +41,18 @@ const EMPTY_CHILDREN = [];
  *
  * @public
  */
-export function h(nodeName, attributes) {
+export function h(nodeName: string | ComponentConstructor, attributes: object, ..._children: ComponentChildren[]) {
 	let children=EMPTY_CHILDREN, lastSimple, child, simple, i;
 	for (i=arguments.length; i-- > 2; ) {
 		stack.push(arguments[i]);
 	}
-	if (attributes && attributes.children!=null) {
-		if (!stack.length) stack.push(attributes.children);
-		delete attributes.children;
+	if (attributes && (attributes as any).children!=null) {
+		if (!stack.length) stack.push((attributes as any).children);
+		delete (attributes as any).children;
 	}
 	while (stack.length) {
-		if ((child = stack.pop()) && child.pop!==undefined) {
-			for (i=child.length; i--; ) stack.push(child[i]);
+		if ((child = stack.pop()) && (child as unknown as ComponentChildren[]).pop!==undefined) {
+			for (i=(child as unknown as ComponentChildren[]).length; i--; ) stack.push((child as unknown as ComponentChildren[])[i]);
 		}
 		else {
 			if (typeof child==='boolean') child = null;
@@ -60,24 +64,25 @@ export function h(nodeName, attributes) {
 			}
 
 			if (simple && lastSimple) {
-				children[children.length-1] += child;
+				(children[children.length-1] as string) += child;
 			}
 			else if (children===EMPTY_CHILDREN) {
-				children = [child];
+				children = [child as VNode | string];
 			}
 			else {
-				children.push(child);
+				children.push(child as VNode | string);
 			}
 
 			lastSimple = simple;
 		}
 	}
 
-	let p = new VNode();
-	p.nodeName = nodeName;
-	p.children = children;
-	p.attributes = attributes==null ? undefined : attributes;
-	p.key = attributes==null ? undefined : attributes.key;
+	let p: VNode = {
+		nodeName: nodeName,
+		children: children,
+		attributes: attributes==null ? undefined : attributes,
+		key: attributes==null ? undefined : (attributes as any).key
+	};
 
 	// if a "vnode hook" is defined, pass every created VNode to it
 	if (options.vnode!==undefined) options.vnode(p);

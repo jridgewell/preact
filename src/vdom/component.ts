@@ -10,6 +10,7 @@ import { removeNode } from '../dom/index';
 type PreactElement = import('../internal').PreactElement;
 type Component = import('../internal').Component;
 type VNode = import('../internal').VNode;
+type ComponentConstructor = import('../internal').ComponentConstructor;
 
 /**
  * Set a component's `props` and possibly re-render the component
@@ -23,12 +24,12 @@ export function setComponentProps(component: Component, props: object, renderMod
 	if (component._disable) return;
 	component._disable = true;
 
-	component.__ref = props.ref;
-	component.__key = props.key;
-	delete props.ref;
-	delete props.key;
+	component.__ref = (props as any).ref;
+	component.__key = (props as any).key;
+	delete (props as any).ref;
+	delete (props as any).key;
 
-	if (typeof component.constructor.getDerivedStateFromProps === 'undefined') {
+	if (typeof (component.constructor as any).getDerivedStateFromProps === 'undefined') {
 		if (!component.base || mountAll) {
 			if (component.componentWillMount) component.componentWillMount();
 		}
@@ -70,7 +71,7 @@ export function setComponentProps(component: Component, props: object, renderMod
  * @param {boolean} [isChild] ?
  * @private
  */
-export function renderComponent(component, renderMode, mountAll, isChild) {
+export function renderComponent(component: Component, renderMode?: number, mountAll?: boolean, isChild?: boolean) {
 	if (component._disable) return;
 
 	let props = component.props,
@@ -87,8 +88,8 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 		snapshot = previousContext,
 		rendered, inst, cbase;
 
-	if (component.constructor.getDerivedStateFromProps) {
-		state = extend(extend({}, state), component.constructor.getDerivedStateFromProps(props, state));
+	if ((component.constructor as any).getDerivedStateFromProps) {
+		state = extend(extend({}, state), (component.constructor as any).getDerivedStateFromProps(props, state));
 		component.state = state;
 	}
 
@@ -125,22 +126,22 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 			snapshot = component.getSnapshotBeforeUpdate(previousProps, previousState);
 		}
 
-		let childComponent = rendered && rendered.nodeName,
+		let childComponent = rendered && (rendered as VNode).nodeName,
 			toUnmount, base;
 
 		if (typeof childComponent==='function') {
 			// set up high order component link
 
-			let childProps = getNodeProps(rendered);
+			let childProps = getNodeProps(rendered as VNode);
 			inst = initialChildComponent;
 
-			if (inst && inst.constructor===childComponent && childProps.key==inst.__key) {
+			if (inst && inst.constructor===childComponent && (childProps as any).key==inst.__key) {
 				setComponentProps(inst, childProps, SYNC_RENDER, context, false);
 			}
 			else {
 				toUnmount = inst;
 
-				component._component = inst = createComponent(childComponent, childProps, context);
+				component._component = inst = createComponent(childComponent as any, childProps, context);
 				inst.nextBase = inst.nextBase || nextBase;
 				inst._parentComponent = component;
 				setComponentProps(inst, childProps, NO_RENDER, context, false);
@@ -159,18 +160,18 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 			}
 
 			if (initialBase || renderMode===SYNC_RENDER) {
-				if (cbase) cbase._component = null;
-				base = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && initialBase.parentNode, true);
+				if (cbase) (cbase as PreactElement)._component = null;
+				base = diff(cbase, rendered, context, mountAll || !isUpdate, initialBase && (initialBase.parentNode as Element), true);
 			}
 		}
 
 		if (initialBase && base!==initialBase && inst!==initialChildComponent) {
 			let baseParent = initialBase.parentNode;
 			if (baseParent && base!==baseParent) {
-				baseParent.replaceChild(base, initialBase);
+				baseParent.replaceChild(base as Node, initialBase);
 
 				if (!toUnmount) {
-					initialBase._component = null;
+					(initialBase as PreactElement)._component = null;
 					recollectNodeTree(initialBase, false);
 				}
 			}
@@ -187,8 +188,8 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 			while ((t=t._parentComponent)) {
 				(componentRef = t).base = base;
 			}
-			base._component = componentRef;
-			base._componentConstructor = componentRef.constructor;
+			(base as PreactElement)._component = componentRef;
+			(base as PreactElement)._componentConstructor = componentRef.constructor as any;
 		}
 	}
 
@@ -207,7 +208,7 @@ export function renderComponent(component, renderMode, mountAll, isChild) {
 		if (options.afterUpdate) options.afterUpdate(component);
 	}
 
-	while (component._renderCallbacks.length) component._renderCallbacks.pop().call(component);
+	while (component._renderCallbacks.length) component._renderCallbacks.pop()!.call(component);
 
 	if (!diffLevel && !isChild) flushMounts();
 }

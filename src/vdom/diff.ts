@@ -7,6 +7,7 @@ import { applyRef } from '../util';
 import { removeNode } from '../dom/index';
 
 type VNode = import('../internal').VNode;
+type ComponentChild = import('../internal').ComponentChild;
 type Component = import('../internal').Component;
 type PreactElement = import('../internal').PreactElement;
 
@@ -47,20 +48,28 @@ export function flushMounts() {
  * @returns {import('../dom').PreactElement} The created/mutated element
  * @private
  */
-export function diff(dom: PreactElement | undefined, vnode: VNode, context: object, mountAll: boolean, parent: Element, componentRoot: boolean) {
+export function diff(
+	dom: PreactElement | Text | undefined | null,
+	vnode: ComponentChild,
+	context: object,
+	mountAll: boolean,
+	parent: Element | null,
+	componentRoot: boolean
+) {
 	// diffLevel having been 0 here indicates initial entry into the diff (not a subdiff)
 	if (!diffLevel++) {
 		// when first starting the diff, check if we're diffing an SVG or within an SVG
-		isSvgMode = parent!=null && (parent as SVGElement).ownerSVGElement!==undefined;
+		isSvgMode =
+			parent != null && (parent as SVGElement).ownerSVGElement !== undefined;
 
 		// hydration is indicated by the existing element to be diffed not having a prop cache
-		hydrating = dom!=null && !(ATTR_KEY in dom);
+		hydrating = dom != null && !(ATTR_KEY in dom);
 	}
 
 	let ret = idiff(dom, vnode, context, mountAll, componentRoot);
 
 	// append the element if its a new parent
-	if (parent && ret.parentNode!==parent) parent.appendChild(ret);
+	if (parent && ret.parentNode !== parent) parent.appendChild(ret);
 
 	// diffLevel being reduced to 0 means we're exiting the diff
 	if (!--diffLevel) {
@@ -82,27 +91,35 @@ export function diff(dom: PreactElement | undefined, vnode: VNode, context: obje
  * @param {boolean} [componentRoot] ?
  * @private
  */
-function idiff(dom: PreactElement | Text | undefined | null, vnode: VNode | string, context: object, mountAll: boolean, componentRoot?: boolean): PreactElement | Text {
+function idiff(
+	dom: PreactElement | Text | undefined | null,
+	vnode: ComponentChild,
+	context: object,
+	mountAll: boolean,
+	componentRoot?: boolean
+): PreactElement | Text {
 	let out = dom,
 		prevSvgMode = isSvgMode;
 
 	// empty values (null, undefined, booleans) render as empty Text nodes
-	if (vnode==null || typeof vnode==='boolean') vnode = '';
-
+	if (vnode == null || typeof vnode === "boolean") vnode = "";
 
 	// Fast case: Strings & Numbers create/update Text nodes.
-	if (typeof vnode==='string' || typeof vnode==='number') {
-
+	if (typeof vnode === "string" || typeof vnode === "number") {
 		// update if it's already a Text node:
-		if (dom && dom.nodeType===3 && dom.parentNode && (!(dom as any)._component || componentRoot)) {
+		if (
+			dom &&
+			dom.nodeType === 3 &&
+			dom.parentNode &&
+			(!(dom as any)._component || componentRoot)
+		) {
 			/* istanbul ignore if */ /* Browser quirk that can't be covered: https://github.com/developit/preact/commit/fd4f21f5c45dfd75151bd27b4c217d8003aa5eb9 */
-			if (dom.nodeValue!=vnode) {
-				dom.nodeValue = vnode;
+			if (dom.nodeValue != vnode) {
+				(dom as Text).nodeValue = vnode as string;
 			}
-		}
-		else {
+		} else {
 			// it wasn't a Text node: replace it with one and recycle the old Element
-			out = document.createTextNode(vnode);
+			out = document.createTextNode(vnode as string);
 			if (dom) {
 				if (dom.parentNode) dom.parentNode.replaceChild(out, dom);
 				recollectNodeTree(dom, true);
@@ -114,17 +131,19 @@ function idiff(dom: PreactElement | Text | undefined | null, vnode: VNode | stri
 		return out!;
 	}
 
-
 	// If the VNode represents a Component, perform a component diff:
-	let vnodeName = vnode.nodeName;
-	if (typeof vnodeName==='function') {
-		return buildComponentFromVNode(dom, vnode, context, mountAll);
+	let vnodeName = (vnode as VNode).nodeName;
+	if (typeof vnodeName === "function") {
+		return buildComponentFromVNode(dom, vnode as VNode, context, mountAll);
 	}
 
-
 	// Tracks entering and exiting SVG namespace when descending through the tree.
-	isSvgMode = vnodeName==='svg' ? true : vnodeName==='foreignObject' ? false : isSvgMode;
-
+	isSvgMode =
+		vnodeName === "svg"
+			? true
+			: vnodeName === "foreignObject"
+			? false
+			: isSvgMode;
 
 	// If there's no existing element or it's the wrong type, create a new one:
 	vnodeName = String(vnodeName);
@@ -148,28 +167,41 @@ function idiff(dom: PreactElement | Text | undefined | null, vnode: VNode | stri
 
 	let fc = out.firstChild,
 		props = (out as any)[ATTR_KEY],
-		vchildren = vnode.children;
+		vchildren = (vnode as VNode).children;
 
-	if (props==null) {
+	if (props == null) {
 		props = (out as any)[ATTR_KEY] = {};
-		for (let a=out.attributes, i=a.length; i--; ) props[a[i].name] = a[i].value;
+		for (let a = out.attributes, i = a.length; i--; )
+			props[a[i].name] = a[i].value;
 	}
 
 	// Optimization: fast-path for elements containing a single TextNode:
-	if (!hydrating && vchildren && vchildren.length===1 && typeof vchildren[0]==='string' && fc!=null && fc.nodeType===3 && fc.nextSibling==null) {
-		if (fc.nodeValue!=vchildren[0]) {
+	if (
+		!hydrating &&
+		vchildren &&
+		vchildren.length === 1 &&
+		typeof vchildren[0] === "string" &&
+		fc != null &&
+		fc.nodeType === 3 &&
+		fc.nextSibling == null
+	) {
+		if (fc.nodeValue != vchildren[0]) {
 			fc.nodeValue = vchildren[0] as string;
 		}
 	}
 	// otherwise, if there are existing or new children, diff them:
-	else if (vchildren && vchildren.length || fc!=null) {
-		innerDiffNode(out, vchildren, context, mountAll, hydrating || props.dangerouslySetInnerHTML!=null);
+	else if ((vchildren && vchildren.length) || fc != null) {
+		innerDiffNode(
+			out,
+			vchildren,
+			context,
+			mountAll,
+			hydrating || props.dangerouslySetInnerHTML != null
+		);
 	}
 
-
 	// Apply attributes/props from VNode to the DOM Element:
-	diffAttributes(out, vnode.attributes, props);
-
+	diffAttributes(out, (vnode as VNode).attributes, props);
 
 	// restore previous SVG mode: (in case we're exiting an SVG namespace)
 	isSvgMode = prevSvgMode;
@@ -316,6 +348,7 @@ export function removeChildren(node: PreactElement | Text) {
 }
 
 
+type Attrs = {[key: string]: unknown}
 /**
  * Apply differences in attributes from a VNode to the given DOM Element.
  * @param {import('../dom').PreactElement} dom Element with attributes to diff `attrs` against
@@ -323,7 +356,7 @@ export function removeChildren(node: PreactElement | Text) {
  * @param {object} old Current/previous attributes (from previous VNode or
  *  element's prop cache)
  */
-function diffAttributes(dom: PreactElement, attrs: {[key: string]: unknown}, old: {[key: string]: unknown}) {
+function diffAttributes(dom: PreactElement, attrs: Attrs | null | undefined, old: Attrs) {
 	let name;
 
 	// remove attributes no longer present on the vnode by setting them to undefined
@@ -335,8 +368,8 @@ function diffAttributes(dom: PreactElement, attrs: {[key: string]: unknown}, old
 
 	// add new & update changed attributes
 	for (name in attrs) {
-		if (name!=='children' && name!=='innerHTML' && (!(name in old) || attrs[name]!==(name==='value' || name==='checked' ? (dom as any)[name] : old[name]))) {
-			setAccessor(dom, name, old[name], old[name] = attrs[name], isSvgMode);
+		if (name!=='children' && name!=='innerHTML' && (!(name in old) || (attrs as Attrs)[name]!==(name==='value' || name==='checked' ? (dom as any)[name] : old[name]))) {
+			setAccessor(dom, name, old[name], old[name] = (attrs as Attrs)[name], isSvgMode);
 		}
 	}
 }

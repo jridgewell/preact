@@ -4,6 +4,8 @@ import { renderComponent } from './vdom/component';
 import { enqueueRender } from './render-queue';
 
 type ComponentType = import('./internal').Component;
+type PreactElement = import('./internal').PreactElement;
+type Ref<T> = import('./internal').Ref<T>;
 
 /**
  * Base Component class.
@@ -20,32 +22,47 @@ type ComponentType = import('./internal').Component;
  *   }
  * }
  */
-export function Component(props, context) {
-	this._dirty = true;
+export class Component {
+	state: Readonly<object>;
+	props: object;
+	context: object;
+	base?: PreactElement | Text | null;
 
-	/**
-	 * @public
-	 * @type {object}
-	 */
-	this.context = context;
+	_renderCallbacks: ((this: Component) => void)[];
+	__key: any;
+	__ref?: Ref<any>;
+	_component?: Component | null;
+	_parentComponent?: Component;
+	_dirty: boolean;
+	_disable?: boolean;
+	nextBase?: PreactElement | Text | null;
+	prevContext?: object | null;
+	prevProps?: object | null;
+	prevState?: object | null;
 
-	/**
-	 * @public
-	 * @type {object}
-	 */
-	this.props = props;
+	constructor(props: object, context: object) {
+		this._dirty = true;
 
-	/**
-	 * @public
-	 * @type {object}
-	 */
-	this.state = this.state || {};
+		/**
+		 * @public
+		 * @type {object}
+		 */
+		this.context = context;
 
-	this._renderCallbacks = [];
-}
+		/**
+		 * @public
+		 * @type {object}
+		 */
+		this.props = props;
 
+		/**
+		 * @public
+		 * @type {object}
+		 */
+		this.state = (this as any).state || {};
 
-extend(Component.prototype, {
+		this._renderCallbacks = [];
+	}
 
 	/**
 	 * Update component state and schedule a re-render.
@@ -55,15 +72,15 @@ extend(Component.prototype, {
 	 * @param {() => void} callback A function to be called once component state is
 	 * 	updated
 	 */
-	setState(state, callback) {
+	setState(state: object, callback: (this: Component) => void) {
 		if (!this.prevState) this.prevState = this.state;
 		this.state = extend(
 			extend({}, this.state),
 			typeof state === 'function' ? state(this.state, this.props) : state
 		);
 		if (callback) this._renderCallbacks.push(callback);
-		enqueueRender(this);
-	},
+		enqueueRender(this as any);
+	}
 
 
 	/**
@@ -72,10 +89,10 @@ extend(Component.prototype, {
 	 * 	re-rendered.
 	 * @private
 	 */
-	forceUpdate(callback) {
+	forceUpdate(callback: (this: Component) => void) {
 		if (callback) this._renderCallbacks.push(callback);
-		renderComponent(this, FORCE_RENDER);
-	},
+		renderComponent(this as any, FORCE_RENDER);
+	}
 
 
 	/**
@@ -89,5 +106,4 @@ extend(Component.prototype, {
 	 * @returns {import('./vnode').VNode | void}
 	 */
 	render() {}
-
-});
+}

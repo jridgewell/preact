@@ -101,8 +101,10 @@ declare namespace preact {
 
 		state: Readonly<S>;
 		props: RenderableProps<P>;
-		context: any;
-		base?: PreactElement | null;
+		context: object;
+		base?: PreactElement | Text | null;
+
+		_renderCallbacks: ((this: Component) => void)[];
 
 		// From https://github.com/DefinitelyTyped/DefinitelyTyped/blob/e836acc75a78cf0655b5dfdbe81d69fdd4d8a252/types/react/index.d.ts#L402
 		// // We MUST keep setState() as a unified signature because it allows proper checking of the method return type.
@@ -112,6 +114,8 @@ declare namespace preact {
 			state: ((prevState: Readonly<S>, props: Readonly<P>) => (Pick<S, K> | S | null)) | (Pick<S, K> | S | null),
 			callback?: () => void
 		): void;
+		getDerivedStateFromProps(props: object, state: object): object;
+		getSnapshotBeforeUpdate(props: object, state: object): object;
 
 		forceUpdate(callback?: () => void): void;
 
@@ -120,14 +124,14 @@ declare namespace preact {
 		// Add these variables to avoid descendants shadowing them (some from properties.json for minification)
 		public __key: any;
 		public __ref: Ref<any>;
-		public _component: Component;
+		public _component: Component | null;
 		public _parentComponent: Component;
-		private _dirty;
+		public _dirty: boolean;
 		public _disable: boolean;
-		public nextBase: PreactElement;
-		private prevContext;
-		private prevProps;
-		private prevState;
+		public nextBase: PreactElement | Text | null;
+		public prevContext: object | null;
+		public prevProps: object | null;
+		public prevState: object | null;
 		private __d;
 		private __x;
 		private __l;

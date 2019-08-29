@@ -35,8 +35,7 @@ type PreactElement = import('../internal').PreactElement;
  *  namespace.
  * @returns {PreactElement} The created DOM node
  */
-export function createNode(nodeName: string, isSvg: boolean): PreactElement {
-	/** @type {PreactElement} */
+export function createNode(nodeName: string, isSvg: boolean) {
 	let node = (isSvg ? document.createElementNS('http://www.w3.org/2000/svg', nodeName) : document.createElement(nodeName)) as unknown as PreactElement;
 	node.normalizedNodeName = nodeName;
 	return node;
