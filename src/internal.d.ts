@@ -2,11 +2,18 @@ export = preact;
 export as namespace preact;
 
 declare namespace preact {
+	interface Template {
+		tree: VNode;
+		expressions: Expression[];
+		constructor: undefined;
+	}
+	type Expression = Template | object | string | number | boolean | null;
+
 	type Key = string | number;
 	type RefObject<T> = { current?: T | null };
 	type RefCallback<T> = (instance: T | null) => void;
 	type Ref<T> = RefObject<T> | RefCallback<T>;
-	type ComponentChild = VNode<any> | object | string | number | boolean | null;
+	type ComponentChild = Template | /* object |*/ string | number | boolean | null;
 	type ComponentChildren = ComponentChild[] | ComponentChild;
 
 	type PreactElement = HTMLElement & {

@@ -1,6 +1,6 @@
 import { diff } from './vdom/diff';
 
-type VNode = import('./internal').VNode;
+type ComponentChild = import('./internal').ComponentChild
 type PreactElement = import('./internal').PreactElement;
 
 /**
@@ -20,6 +20,6 @@ type PreactElement = import('./internal').PreactElement;
  * const Thing = ({ name }) => <span>{ name }</span>;
  * render(<Thing name="one" />, document.querySelector('#foo'));
  */
-export function render(vnode: VNode | string | number | boolean | object | null, parent: PreactElement, merge?: PreactElement) {
+export function render(vnode:  ComponentChild, parent: PreactElement, merge?: PreactElement) {
 	return diff(merge, vnode, {}, false, parent, false);
 }

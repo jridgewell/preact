@@ -1,4 +1,3 @@
-import { VNode } from './vnode';
 import options from './options';
 
 
@@ -88,4 +87,67 @@ export function h(nodeName: string | ComponentConstructor, attributes: object, .
 	if (options.vnode!==undefined) options.vnode(p);
 
 	return p;
+}
+
+const EMPTY_STATIC_CHILDREN: StaticChild[] = [];
+const staticStack: StaticChild[] = [];
+
+type StaticChild = VNode | string | number | boolean | null;
+export function jsx2(nodeName: string | ComponentConstructor, attributes: object, ..._children: StaticChild[]) {
+	let children=EMPTY_STATIC_CHILDREN, lastSimple, child, simple, i;
+	for (i=arguments.length; i-- > 2; ) {
+		staticStack.push(arguments[i]);
+	}
+	if (attributes && (attributes as any).children!=null) {
+		if (!staticStack.length) staticStack.push((attributes as any).children);
+		delete (attributes as any).children;
+	}
+	while (staticStack.length) {
+		if ((child = staticStack.pop()) && (child as unknown as StaticChild[]).pop!==undefined) {
+			for (i=(child as unknown as StaticChild[]).length; i--; ) staticStack.push((child as unknown as StaticChild[])[i]);
+		}
+		else {
+			if (typeof child==='boolean') child = '';
+
+			if ((simple = typeof nodeName!=='function')) {
+				if (child==null) child = '';
+				else if (typeof child==='number') child = String(child);
+				else if (typeof child!=='string') simple = false;
+			}
+
+			if (simple && lastSimple) {
+				(children[children.length-1] as string) += child;
+			}
+			else if (children===EMPTY_CHILDREN) {
+				children = [child as VNode | string];
+			}
+			else {
+				children.push(child as VNode | string);
+			}
+
+			lastSimple = simple;
+		}
+	}
+
+	let p: VNode = {
+		nodeName: nodeName,
+		children: children as (VNode | string)[],
+		attributes: attributes==null ? undefined : attributes,
+		key: attributes==null ? undefined : (attributes as any).key
+	};
+
+	// if a "vnode hook" is defined, pass every created VNode to it
+	if (options.vnode!==undefined) options.vnode(p);
+
+	return p;
+}
+
+type Template = import('./internal').Template;
+type Expression = import('./internal').Expression;
+export function createTemplate(tree: VNode, expressions: Expression[]): Template {
+	return {
+		tree,
+		expressions,
+		constructor: void 0,
+	};
 }
